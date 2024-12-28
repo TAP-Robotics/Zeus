@@ -1,12 +1,19 @@
 import cv2 as cv
+import time
+import numpy as np
+
+from cv2.typing import MatLike
 from ultralytics.utils import yaml_load
 from ultralytics.utils.checks import check_yaml
-import numpy as np
 
 CLASSES = yaml_load(check_yaml("./coco8.yaml"))["names"]
 colors = np.random.uniform(0,225,size=(len(CLASSES), 3)) # Create random colors for each element of the file 
 
-model: cv.dnn.Net = cv.dnn.readNetFromONNX("./yolov8n.onnx")
+resizing_factor = 256
+
+model: cv.dnn.Net = cv.dnn.readNetFromONNX("./models/yolo11n.onnx")
+
+cv.setNumThreads(4)
 
 def draw_boxes(img, class_id, conf, x, y, x_plus_w, x_plus_h):
     label = f"{CLASSES[class_id]} {conf:.2f}"
@@ -14,21 +21,26 @@ def draw_boxes(img, class_id, conf, x, y, x_plus_w, x_plus_h):
     cv.rectangle(img, (x, y), (x_plus_w, x_plus_h), color, 1)
     cv.putText(img, label, (x - 10, y - 10), cv.FONT_HERSHEY_PLAIN, 1, color, 2)
 
-def infer():
-
-    original_image: np.ndarray = cv.imread("./photo.png")
+def infer(frame:MatLike):
+    original_image: np.ndarray = frame
     [height, width, _] = original_image.shape
+
+
+    start_time = time.time()  # Start the timer
 
     length = max((height, width))
     image = np.zeros((length, length, 3), np.uint8)
     image[0:height, 0:width] = original_image
 
-    scale = length / 640
+    scale = length / resizing_factor
 
-    blob = cv.dnn.blobFromImage(image, scalefactor=1 / 255.0, size=(640,640), swapRB=True)
+    blob = cv.dnn.blobFromImage(image, scalefactor=1 / 255.0, size=(resizing_factor,resizing_factor), swapRB=True)
     model.setInput(blob)
 
     outputs = model.forward()
+
+    inference_time = time.time() - start_time
+    print(f"Inference Time: {inference_time:.3f} seconds")
 
     outputs = np.array([cv.transpose(outputs[0])])
     rows = outputs.shape[1]
@@ -53,13 +65,12 @@ def infer():
             class_ids.append(maxClassIndex)
 
     # Apply NMS (Non-maximum suppression)
-    result_boxes = cv.dnn.NMSBoxes(boxes, scores, 0.25, 0.45, 0.5)
+    result_boxes = cv.dnn.NMSBoxes(boxes, scores, 0.25, 0.3, 0.5)
 
     detections = []
 
     # Iterate through NMS results to draw bounding boxes and labels
     for i in range(len(result_boxes)):
-        print("Class IDs:", class_ids)
         index = result_boxes[i]
         box = boxes[index]
         detection = {
@@ -80,20 +91,16 @@ def infer():
         )
 
     # Display the image with bounding boxes
-    cv.imshow("image", original_image)
-    cv.waitKey(0)
-    cv.destroyAllWindows()
 
-    return detections
+    return original_image
 
 if __name__ == "__main__":
     print("TAP Vision System")
-
     # get per frame camera
-    cap = cv.VideoCapture(2)
+    cap = cv.VideoCapture(0)
+
     if not cap.isOpened():
         print("No camera feed is found.")
-        exit()
 
     while True:
         ret, frame = cap.read()
@@ -101,7 +108,17 @@ if __name__ == "__main__":
         if not ret:
             print("Cannot read frame")
             break
-        cv.imshow("frame",frame)
+
+        # Ensure frame is valid before converting
+        if frame is not None:
+            frame = infer(frame)
+            cv.imshow("frame", frame)
+        else:
+            print("Empty frame received")
+
+        # Check for 'q' key to exit the loop
+        if cv.waitKey(1) & 0xFF == ord('q'):
+            break
 
     cap.release()
     cv.destroyAllWindows()
