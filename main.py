@@ -1,6 +1,11 @@
 import cv2 as cv
+<<<<<<< HEAD
+import asyncio
+from websockets.asyncio.server import ServerConnection, serve
+=======
 import time
 import numpy as np
+>>>>>>> parent of 9450c1b ([test] remove models folder)
 
 from cv2.typing import MatLike
 from ultralytics.utils import yaml_load
@@ -94,9 +99,20 @@ def infer(frame:MatLike):
 
     return original_image
 
+async def message_handler(websocket: ServerConnection) -> None:
+    async for message in websocket:
+        print(message)
+
+async def main():
+    async with serve(message_handler, "localhost", 7207) as server:
+        await server.serve_forever()
+
 if __name__ == "__main__":
     print("TAP Vision System")
     # get per frame camera
+<<<<<<< HEAD
+    asyncio.run(main())
+=======
     cap = cv.VideoCapture(0)
 
     if not cap.isOpened():
@@ -122,3 +138,4 @@ if __name__ == "__main__":
 
     cap.release()
     cv.destroyAllWindows()
+>>>>>>> parent of 9450c1b ([test] remove models folder)
