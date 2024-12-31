@@ -1,45 +1,34 @@
-from sys import maxsize
-import cv2 as cv
+import zmq
 import asyncio
 import json
-import base64
-from websockets.asyncio.server import ServerConnection, serve
+import asyncio
+
 from inference import FrameInference
-import numpy as np
+from live_vision_handler import image_handler
+
+context = zmq.Context()
+socket = context.socket(zmq.ROUTER)
+socket.bind("tcp://localhost:7207")
 
 inferer = FrameInference()
 
-cont = False
-
-queue = asyncio.Queue(maxsize=10)
-
-async def message_handler(websocket: ServerConnection) -> None:
-    async for message in websocket:
-        data = json.loads(json.loads(message))
-
-        if data["message"] == "infer":
-            await process_frame(data)
-
-async def process_frame(data):
-    # Decode image in a separate thread
-    imageDecoded = await asyncio.to_thread(base64.b64decode, data["content"])
-    image = await asyncio.to_thread(
-        lambda: cv.imdecode(np.frombuffer(imageDecoded, np.uint8), cv.IMREAD_COLOR)
-    )
-
-    inferedImage = await asyncio.to_thread(lambda: inferer.forward(image))
-
-    cv.imshow("Frame", inferedImage)
-    cv.waitKey(1)
-
-
-
 async def main():
-    async with serve(message_handler, "localhost", 7207) as server:
-        await server.serve_forever()
+    while True:
+        message = socket.recv_string()
+        try:
+            data = json.loads(message)
+
+            if(data["message"] == "vision_infer"):
+                imgData = data["content"]
+                await image_handler(imgData, inferer)
+
+        except json.JSONDecodeError:
+            print("JSON decode error, possibly uuid please ignore for now.")
+            continue
+
+        socket.send(b"Cam Recieved")
 
 if __name__ == "__main__":
     print("TAP Vision System")
     # get per frame camera
     asyncio.run(main())
-    cv.destroyAllWindows()
