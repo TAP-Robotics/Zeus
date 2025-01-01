@@ -1,11 +1,13 @@
 import cv2 as cv
 import time
 import numpy as np
+import logging
 
 from cv2.typing import MatLike
 from ultralytics.utils import yaml_load
 from ultralytics.utils.checks import check_yaml
 
+logger = logging.getLogger(__name__)
 
 #WARN: if something goes wrong in loading CLASSES this might be the problem
 CLASSES: str = yaml_load(check_yaml("./coco8.yaml"))["names"]
@@ -48,7 +50,7 @@ class FrameInference:
         outputs = self.model.forward()
 
         inference_time = time.time() - start_time
-        print(f"Inference Time: {inference_time:.3f} seconds")
+        logger.info(f"Inference Time: {inference_time:.3f} seconds")
 
         outputs = np.array([cv.transpose(outputs[0])])
         rows = outputs.shape[1]
