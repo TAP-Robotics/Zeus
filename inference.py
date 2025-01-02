@@ -23,7 +23,7 @@ class FrameInference:
 
         self.model: cv.dnn.Net = cv.dnn.readNetFromONNX("./models/yolo11n.onnx")
 
-        cv.setNumThreads(4)
+        cv.setNumThreads(8)
 
     def draw_boxes(self, img:MatLike,class_id: int, conf: float, x: int, y:int, x_plus_w:int, x_plus_h:int):
         label = f"{CLASSES[class_id]} {conf:.2f}"
@@ -32,7 +32,7 @@ class FrameInference:
         cv.putText(img, label, (x - 10, y - 10), cv.FONT_HERSHEY_PLAIN, 1, color, 2)
 
     def forward(self, frame: MatLike):
-        original_image: np.ndarray = frame
+        original_image: np.ndarray = self.get_undistort(frame)
         [height, width, _] = original_image.shape
 
 
@@ -50,10 +50,11 @@ class FrameInference:
         outputs = self.model.forward()
 
         inference_time = time.time() - start_time
-        logger.info(f"Inference Time: {inference_time:.3f} seconds")
+        #logger.info(f"Inference Time: {inference_time:.3f} seconds")
 
         outputs = np.array([cv.transpose(outputs[0])])
         rows = outputs.shape[1]
+        print(outputs)
 
         boxes = []
         scores = []
@@ -103,3 +104,15 @@ class FrameInference:
         # Display the image with bounding boxes
 
         return original_image
+
+    def get_undistort(self, frame: MatLike):
+        #NOTE: if a new camera is used, please tim, rewrite this part to conform to the camera's specifications. These values are just estimates.
+
+        # These are camera's intrinsict properties. f_x, f_y -> Focal lenghts, c_x, c_y -> optical center, and distortion coefficients.
+        cam_mat = np.array([[99000, 0, 4624], [0, 99000, 3468], [0, 0, 1]])
+
+        distort_coef = np.array([0.1, -0.01, 0.001, 0.001, 0])
+
+        undistorted_image = cv.undistort(frame, cam_mat, distort_coef)
+
+        return undistorted_image

@@ -14,6 +14,7 @@ socket.bind("tcp://localhost:7207")
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, handlers=[
     logging.FileHandler("zeusy.log"),
+    logging.StreamHandler()
 ])
 
 inferer = FrameInference()

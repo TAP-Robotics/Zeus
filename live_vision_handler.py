@@ -11,7 +11,11 @@ async def image_handler(data, inferer: FrameInference):
     image = await asyncio.to_thread(
         lambda: cv.imdecode(np.frombuffer(imageDecoded, np.uint8), cv.IMREAD_COLOR)
     )
+
+    un_im = await asyncio.to_thread(lambda: inferer.get_undistort(image))
+
     inferedImage = await asyncio.to_thread(lambda: inferer.forward(image))
 
-    cv.imshow("Server / Inference (Python)", inferedImage)
+
+    cv.imshow("Server / Inference (Python)", un_im)
     cv.waitKey(1)
