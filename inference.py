@@ -10,7 +10,7 @@ from ultralytics.utils.checks import check_yaml
 logger = logging.getLogger(__name__)
 
 #WARN: if something goes wrong in loading CLASSES this might be the problem
-CLASSES: str = yaml_load(check_yaml("./coco8.yaml"))["names"]
+CLASSES: str = yaml_load(check_yaml("./data.yaml"))["names"]
 
 class FrameInference:
     """
@@ -21,7 +21,7 @@ class FrameInference:
 
         self.resizing_factor = 256
 
-        self.model: cv.dnn.Net = cv.dnn.readNetFromONNX("./models/yolo11n.onnx")
+        self.model: cv.dnn.Net = cv.dnn.readNetFromONNX("./models/best.onnx")
 
         cv.setNumThreads(8)
 
