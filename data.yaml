@@ -4,7 +4,13 @@ test: ../test/images
 path: ../coco8
 
 nc: 6
-names: ['BIODEGRADABLE', 'CARDBOARD', 'GLASS', 'METAL', 'PAPER', 'PLASTIC']
+names:
+  0: BIODEGRADEABLE
+  1: CARDBOARD
+  2: GLASS
+  3: METAL
+  4: PAPER
+  5: PLASTIC
 
 roboflow:
   workspace: material-identification

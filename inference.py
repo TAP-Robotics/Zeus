@@ -54,7 +54,6 @@ class FrameInference:
 
         outputs = np.array([cv.transpose(outputs[0])])
         rows = outputs.shape[1]
-        print(outputs)
 
         boxes = []
         scores = []
@@ -64,7 +63,7 @@ class FrameInference:
         for i in range(rows):
             classes_scores = outputs[0][i][4:]
             (minScore, maxScore, minClassLoc, (x, maxClassIndex)) = cv.minMaxLoc(classes_scores)
-            if maxScore >= 0.25:
+            if maxScore >= 0.1:
                 box = [
                     outputs[0][i][0] - (0.5 * outputs[0][i][2]),
                     outputs[0][i][1] - (0.5 * outputs[0][i][3]),
@@ -91,6 +90,7 @@ class FrameInference:
                 "scale": scale,
             }
             detections.append(detection)
+
             self.draw_boxes(
                 original_image,
                 class_ids[index],
